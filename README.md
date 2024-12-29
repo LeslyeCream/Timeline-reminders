@@ -15,14 +15,14 @@ I basically sought to put into practice my recent knowledge in Python while solv
 
 # Features
 
-- Add reminders or a timeline by simply adding (or reusing) metadata to your notes
+- Add reminders simply adding (or reusing) metadata in your notes
 - Option to add priorities
 - Option to choose repeat cycles
 - Show thumbnails (images or GIFS)
 - Reminders organized in ascending or descending order, with certain extra categories (expired events, today, this week)
 - Set preset priorities for specific folders
 - Option to give style (bold, italic, crossed, highlight, etc.) to each event or reminder
-- A simple way to add your notes according to their date. Useful if you study universal history, art, etc. and want to see in a single timeline all events chronologically.
+- A simple mode to add your notes according to their date. Useful if you study universal history, art, etc and want to see in a single timeline all events chronologically
 ***
 
 # How to use it
@@ -58,7 +58,7 @@ folder_rules = {
 
 ***
 
-`timeline_file` must be the path where you will create the file with the timeline. If the script doesn't exist it will create it.
+`timeline_file` must be the path where you will create the file with the timeline. 
 
 ***
 
@@ -97,7 +97,7 @@ folder_rules = {
 
 ***
 
-`folder_rules` Is a dictionary that stores the priority rules that should be applied to a certain folder containing reminders. For example if my main folder is `Calendar` and contains a subfolder called `Birthdays` I can add a level 1 priority (i.e. a header H1) for all reminders within `Birthdays'. The default value is a code line style.
+`folder_rules` Is a dictionary that stores the priority rules that should be applied to a certain folder containing reminders. For example: if my main folder is `Calendar` and contains a subfolder called `Birthdays` I can add a level 1 priority (i.e. a header H1) for all reminders within `Birthdays'. The default value is a code line style.
 
 ![Screenshot_20241228-180247_cropped](https://github.com/user-attachments/assets/cab50dc5-0848-4ea3-8107-4123a0ca2b04)
 
@@ -137,7 +137,7 @@ They are nothing more than markdown headers to give a visual emphasis within the
 
 # Important note
 
-In the near future I plan to separate the settings in a separate file for greater convenience. If you're wondering why the script doesn't have a CLI mode work on it! The same goes for the absence of using the `pyaml` module instead of regular expressions within the script.
+In the near future I plan to separate the settings in a separate file for greater convenience. If you're wondering why the script doesn't have a CLI mode, work on it! The same goes for the absence of using the `pyaml` module instead of regular expressions within the script.
 
 ***
 
