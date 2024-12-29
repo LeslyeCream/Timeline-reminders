@@ -1,12 +1,12 @@
 # Timeline-reminders
 
-Timeline Reminders is a Python script that allows you to automatically organize your notes on a timeline using Obsidian’s awesome Timeline plugin. Also create an ical file to sync all your reminders in any calendar!
+Timeline Reminders is a Python script that allows you to automatically organize your notes on a timeline using Obsidian’s awesome [Timeline](https://github.com/George-debug/obsidian-timeline) plugin. Also create an ical file to sync all your reminders in any calendar!
 
 ***
 
 # History
 
-I basically sought to put into practice my recent knowledge in Python while solving a problem of my day to day. Although the timeline plugin is fantastic, in a real scenario I found it really "complicated" to add, modify or delete items manually on a daily basis, especially if they are hundreds or have a lot of details (and even worse if I do it from the mobile). So this script tries to simplify the whole process behind it.
+I basically sought to put into practice my recent knowledge in Python while solving a problem of my day to day. Although the timeline plugin is fantastic, in a real scenario I found it really "complicated" to add, modify or delete items manually on a daily basis, especially if they are hundreds or have a lot of details (and even worse if I do it from my phone). So this script tries to simplify the whole process behind it.
 
 ![IMG_20241227_085542](https://github.com/user-attachments/assets/82f2c60f-8b5e-4139-a951-60ec64871960)
 
