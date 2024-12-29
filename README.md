@@ -145,6 +145,9 @@ In the near future I plan to separate the settings in a separate file for greate
 
 If this script has been very useful to you in your workflow or you are looking for a slightly customized version that best suits your needs, please consider leaving me a small tip. I would really appreciate it!
 
+<a href='https://ko-fi.com/W7W349H97' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi1.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+
+
 Don’t forget to report bugs or contribute new ideas! (:
 
 ***
