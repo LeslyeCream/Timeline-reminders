@@ -48,7 +48,7 @@ using the python script i would just have to add this inside my notes to get the
 ```yaml
 Reminder: 2024-12-31
 Repetition: 365
-Priorities: 1
+Priority: 1
 Style: 
 ```
 
