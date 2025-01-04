@@ -7,6 +7,7 @@ import re
 
 
 # ::::: SETTINGS :::::
+default_template = f"```timeline-labeled\n[line-3, body-1]\n"
 vault = "/storage/emulated/0/Documents/Obsidian/Calendar"
 timeline_file = "/storage/emulated/0/Documents/Obsidian/Calendar/Calendar.md"
 ical_file = "/storage/emulated/0/Documents/Obsidian/Calendar/.Calendar.ics"
@@ -17,7 +18,7 @@ show_images = True
 ical_enable = True
 simple_mode = False
 folder_rules = {
-  "Default": "`",
+  "Default": "`", # don't delete this value
   "Birthdays": "#",
   "Anniversaries": "##"
 }
@@ -46,15 +47,10 @@ timeline = {
 # ====================================
 
 
-# ::::: CREATE DASHBOARD :::::
-def init_template() -> None:
-  with open(timeline_file, "w") as f:
-    f.write(f"```timeline-labeled\n")
-    f.write(f"[line-3, body-1]\n")
-
-  if ical_enable == True:
-    with open(ical_file, "wb") as f:
-      f.write(b"")
+# ::::: DASHBOARD :::::
+def init_template(**kwargs) -> None:
+  with open(timeline_file, kwargs["mode"]) as f:
+    f.write(kwargs["content"])
 # ====================================
 
 
@@ -77,7 +73,7 @@ def yaml_files(md_file) -> str:
 # ====================================
 
 
-# ::::: CHECK REMINDER PARAMETERS :::::
+# ::::: CHECK REMINDER :::::
 def check_metadata (path_file: str) -> list:
   with open(path_file, "r") as f:
     content = f.read()
@@ -137,7 +133,8 @@ def set_priority_dir(dir_name, show_dirnames, priority_key):
       else:
         default = folder_rules.get("Default")
         head_dir_name = (f"{default} {dir_name} {default}\n")
-  else: #disabled dir names
+
+  else: # disabled dir names
     head_dir_name = ""
 
   return head_dir_name
@@ -205,6 +202,9 @@ def build_timeline() -> None:
 
 # ::::: ADD EVENTS - CALENDAR :::::
 def add_to_ical(ical_events: list) -> None:
+  with open(ical_file, "wb") as f:
+    f.write(b"")
+  
   cal = Calendar()
 
   for item in ical_events:
@@ -223,25 +223,23 @@ def add_to_ical(ical_events: list) -> None:
 
     cal.add_component(event)
 
-  with open(ical_file, 'ab') as f:
+  with open(ical_file, 'ab') as f: # TO-DO | Avoid this twice
     f.write(cal.to_ical())
 # ====================================
 
 
 # ::::: SAVE CHANGES :::::
 def save_timeline() -> None:
-  with open(timeline_file, "a") as f:
-
-    for time_date, lst_events in timeline.items():
-      if timeline.get(time_date) != []: # TO-DO | find the right way for this
-        content_date = concatenate_files(lst_events)
-        f.write(f"date: {time_date}\ncontent: {content_date}\n")
+  for time_date, lst_events in timeline.items():
+    if timeline.get(time_date) != []: # TO-DO | find the right way for this line
+      content_date = concatenate_files(lst_events)
+      init_template(mode="a", content=f"date: {time_date}\ncontent: {content_date}\n")
 # ====================================
 
 
 # ::::: MAIN :::::
 def main() -> None:
-  init_template()
+  init_template(mode="w", content=default_template)
   md_files = list(filter(yaml_files, [item for item in Path(vault).rglob("*.md") if str(item) != timeline_file]))
   valid_files = (map(check_metadata , md_files))
 
@@ -250,6 +248,7 @@ def main() -> None:
 
   build_timeline()
   save_timeline()
+
   if ical_enable:
     add_to_ical(ical_events)
 
