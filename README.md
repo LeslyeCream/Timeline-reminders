@@ -10,10 +10,11 @@ Timeline Reminders is a Python script that allows you to automatically organize 
 
 I basically sought to put into practice my recent knowledge in Python while solving a problem of my day to day. Although the timeline plugin is fantastic, in a real scenario I found it really "complicated" to add, modify or delete items manually on a daily basis, especially if they are hundreds or have a lot of details (and even worse if I do it from my phone) So this script tries to simplify the whole process behind it.
 
-![IMG_20241227_085542](https://github.com/user-attachments/assets/82f2c60f-8b5e-4139-a951-60ec64871960)
+![IMG_20241223_073647](https://github.com/user-attachments/assets/31c8523a-0087-4085-9873-9f09aa0e94d4)
 
 
-Instead of writing all this: 
+
+Instead of writing all this down to create the timeline: 
 
 ```markdown
 Timeline
@@ -81,7 +82,8 @@ Before running the script make sure to change the required values in the setting
 
 Inside the script you will find the following settings:
 
-```python 
+```python
+default_template = f"```timeline-labeled\n[line-3, body-1]\n"
 vault = "/storage/emulated/0/Documents/Obsidian/Calendar"
 timeline_file = "/storage/emulated/0/Documents/Obsidian/Calendar/Calendar.md"
 ical_file = "/storage/emulated/0/Documents/Obsidian/Calendar/.Calendar.ics"
@@ -99,7 +101,7 @@ folder_rules = {
 ```
 
 ***
-
+`default_template` It's the code needed to create the timeline inside the note, no need to change it unless you're looking to change the appearance of the timeline. More information [here](https://github.com/George-debug/obsidian-timeline)
 `Vault` is the path where the script should search for notes to be included in the timeline (as long as it explicitly contains a date metadata). If you don't want to alter the structure of your notes you can use the absolute path of your vault but I recommend creating a specific folder for it to avoid a constant mass scan.
 
 ***
