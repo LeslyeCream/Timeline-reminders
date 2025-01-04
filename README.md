@@ -72,7 +72,7 @@ Style:
 
 # How to use it
 
-Before running the script make sure to change the required values in the settings. Once configured just run `python timeline_main.py` on the terminal.
+Before running the script make sure to change the required values in the settings. Once configured just run`pip install -r requirements.txt` and then `python timeline_main.py` on the terminal.
 
 ***
 
