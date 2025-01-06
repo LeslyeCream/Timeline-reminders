@@ -85,11 +85,15 @@ def check_metadata (path_file: str) -> list:
 
     if priority_key := re.search(priority_regex, content):
       priority_key = int(priority_key.group())
-
-    if thumb_key := re.search(thumb_regex, content):
-      thumb_key = thumb_key.group()
+    
+    if show_images:
+      if thumb_key := re.search(thumb_regex, content):
+        thumb_key = thumb_key.group()
+      else:
+        thumb_key = ""
     else:
       thumb_key = ""
+      
 
     if style_key := re.search(style_regex, content):
       style_key = str(style_key.group()).replace('"','').strip()
@@ -126,7 +130,6 @@ def set_priority_dir(dir_name, show_dirnames, priority_key):
   if show_dirnames:
     if priority_key:
       head_dir_name = (f"{'#' * priority_key} {dir_name} \n")
-
     else:
       if dir_name in folder_rules.keys():
         head_dir_name = f"{folder_rules.get(dir_name)} {dir_name}\n"
@@ -202,24 +205,22 @@ def build_timeline() -> None:
 
 # ::::: ADD EVENTS - CALENDAR :::::
 def add_to_ical(ical_events: list) -> None:
-  with open(ical_file, "wb") as f:
+  with open(ical_file, "wb+") as f:
     f.write(b"")
   
   cal = Calendar()
 
-  for item in ical_events:
+  for file_name, date, repeat, dir_name in ical_events:
     event = Event()
-    file_name = item[0]
-    date_reminder = datetime.datetime.strptime(item[1], default_format_date).date()
-    repeat_value = item[2]
-    dir_name = item[3]
+    date_reminder = datetime.datetime.strptime(date, default_format_date).date()
 
     event.add('summary', file_name)
     event.add('dtstart', date_reminder)
     event.add('dtend', date_reminder)
     event.add('description', dir_name)
-    if repeat_value != None:
-      event.add('rrule', {'FREQ': 'DAILY', 'INTERVAL': repeat_value})
+    
+    if repeat != None:
+      event.add('rrule', {'FREQ': 'DAILY', 'INTERVAL': repeat})
 
     cal.add_component(event)
 
