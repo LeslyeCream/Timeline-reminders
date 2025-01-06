@@ -100,6 +100,7 @@ folder_rules = {
 
 ***
 `default_template` It's the code needed to create the timeline inside the note, no need to change it unless you're looking to change the appearance of the timeline. More information [here](https://github.com/George-debug/obsidian-timeline)
+
 `Vault` is the path where the script should search for notes to be included in the timeline (as long as it explicitly contains a date metadata). If you don't want to alter the structure of your notes you can use the absolute path of your vault but I recommend creating a specific folder for it to avoid a constant mass scan.
 
 ***
