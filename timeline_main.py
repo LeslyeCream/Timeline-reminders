@@ -1,8 +1,11 @@
 from icalendar import Calendar, Event
 from dateutil import parser
+from functools import wraps
 from pathlib import Path
 import functools
 import datetime
+import functools
+import timeit
 import re
 
 
@@ -11,14 +14,21 @@ default_template = f"```timeline-labeled\n[line-3, body-1]\n"
 vault = "/storage/emulated/0/Documents/Obsidian/Calendar"
 timeline_file = "/storage/emulated/0/Documents/Obsidian/Calendar/Calendar.md"
 ical_file = "/storage/emulated/0/Documents/Obsidian/Calendar/.Calendar.ics"
+main_yaml_key = "Reminder"
 reverse_sort = False
 show_expired_dates = True
 show_dirnames = True
 show_images = True
 ical_enable = True
 simple_mode = False
+limited_dates = False
+dates_rules = {
+	"Start": "2018-01-01", 
+	"End": "2018-12-31",
+	"Others": ["2024-12-01", "2023-12-31"]
+	}
 folder_rules = {
-  "Default": "`", # don't delete this value
+  "Default": "`", # if you want change but don't delete this value
   "Birthdays": "#",
   "Anniversaries": "##"
 }
@@ -26,11 +36,11 @@ folder_rules = {
 
 
 # ::::: VARIABLES :::::
-date_regex = r"(?<=Reminder\:\s)\d{4}\-\d{2}\-\d{2}(T\d{2}\:\d{2}\:\d{2})?"
+date_regex = f"(?<={main_yaml_key}\:\s).*" #TO-DO | Improve this
 repeat_regex = r"(?<=Repeat\:\s)\d+"
 priority_regex = r"(?<=Priority\:\s)[1-6]"
 style_regex = r"(?<=Style\:\s).*"
-thumb_regex = r"\!\[{2}.*(\.jpg|png|heic|webp|jpeg)\]{2}"
+thumb_regex = r"\!\[+?.*(\.jpg|png|heic|webp|jpeg)(\]+|\))"
 default_format_date = "%Y-%m-%d"
 today = datetime.date.today()
 tomorrow = today + datetime.timedelta(days=1)
@@ -39,7 +49,7 @@ this_year = datetime.datetime(today.year, 12, 31).date()
 dates_dict = {}
 ical_events = []
 timeline = {
-  "Expire": [],
+  "Expired": [],
   "Today": [],
   "Tomorrow": [],
   "This week": []
@@ -47,10 +57,43 @@ timeline = {
 # ====================================
 
 
+# ::::::HANDLE ERRORS :::::
+def try_log(main_func):
+  @wraps(main_func)
+  def wrapper(*args, **kwargs):
+    try:
+      start = timeit.default_timer()
+      num_notes = main_func(*args, **kwargs)
+      end = timeit.default_timer()
+      execution_time = end - start
+      return handle_msg(msg=f"Timeline created! 🎉| {num_notes} notes added in {execution_time:.2f} seconds", sep="·")
+    except Exception as e:
+      return handle_msg(msg=f"ERROR: {e}", sep="-")
+  return wrapper
+# ====================================
+
+
+# ::::: HANDLE MESSAGES :::::
+def handle_msg(**kwargs):
+  print(kwargs["sep"] * 20)
+  print(kwargs["msg"])
+  print(kwargs["sep"] * 20)
+# ====================================
+
+
 # ::::: DASHBOARD :::::
 def init_template(**kwargs) -> None:
   with open(timeline_file, kwargs["mode"]) as f:
     f.write(kwargs["content"])
+# ====================================
+
+
+# ::::: GET FILES :::::
+def get_note_paths() -> list:
+  file_paths = [path for path in Path(vault).rglob("*.md") if str(path) != timeline_file and not str(path.parent.name).startswith(".")]
+  md_files = list(filter(yaml_files, file_paths))
+  valid_files = (map(check_metadata , md_files))
+  return valid_files
 # ====================================
 
 
@@ -68,8 +111,15 @@ def check_format_date(input_date: str) -> str:
 # ::::: ONLY YAML FILES:::::
 def yaml_files(md_file) -> str:
   with open(md_file, "r") as f:
-    if match := re.search(date_regex, f.read()):
+    if match := re.search(f"{date_regex}", f.read()):
       return md_file
+# ====================================
+
+
+# ::::: STRPTIME :::::
+def striptime(input_date) -> datetime.date:
+  output_date = datetime.datetime.strptime(input_date, default_format_date).date()
+  return output_date
 # ====================================
 
 
@@ -77,7 +127,7 @@ def yaml_files(md_file) -> str:
 def check_metadata (path_file: str) -> list:
   with open(path_file, "r") as f:
     content = f.read()
-    date_key = re.search(date_regex, content)
+    date_key = re.search(f"{date_regex}", content)
     date_key = check_format_date(date_key.group())
 
     if repeat_key := re.search(repeat_regex, content):
@@ -126,7 +176,7 @@ def get_reminder_details(metadata: list) -> None:
 
 
 # ::::: CHECK PRIORITY AND SET DIR NAMES :::::
-def set_priority_dir(dir_name, show_dirnames, priority_key):
+def set_priority_dir(dir_name, show_dirnames, priority_key) -> str:
   if show_dirnames:
     if priority_key:
       head_dir_name = (f"{'#' * priority_key} {dir_name} \n")
@@ -145,8 +195,8 @@ def set_priority_dir(dir_name, show_dirnames, priority_key):
 
 
 # ::::: SCHEDULE OLD DATES :::::
-def schedule_old_dates(input_date: str, repeat_key: int) -> object:
-  reminder = datetime.datetime.strptime(input_date, default_format_date).date()
+def schedule_old_dates(input_date: str, repeat_key: int) -> str:
+  reminder = striptime(input_date)
 
   if reminder >= today:
     return input_date
@@ -170,18 +220,17 @@ def concatenate_files(files: list) -> list:
 
 
 # ::::: BUILD TIMELINE :::::
-def build_timeline() -> None:
+def build_timeline() -> None: 
   for each_event in sorted(dates_dict, reverse=reverse_sort):
     content_week = [] # needed for to group week dates
-    reminder_date = datetime.datetime.strptime(each_event.strip(), default_format_date).date()
+    reminder_date = striptime(each_event.strip())
 
     if simple_mode:
-      day = reminder_date.strftime("%b %d %Y")
-      timeline[day] = dates_dict[each_event]
+      run_simple_mode(reminder_date, each_event)
       continue
 
     if reminder_date < today and show_expired_dates:
-      timeline["Expire"] = dates_dict[each_event]
+      timeline["Expired"] = dates_dict[each_event]
 
     if reminder_date == today:
       timeline["Today"] = dates_dict[each_event]
@@ -203,6 +252,26 @@ def build_timeline() -> None:
 # ====================================
 
 
+# ::::: SIMPLE MODE :::::
+def run_simple_mode(reminder_date: str, each_event: str) -> None:
+  if limited_dates == False:
+    day = reminder_date.strftime("%b %d %Y")
+    timeline[day] = dates_dict[each_event]
+ 
+  else:
+    start_date = striptime(dates_rules["Start"])
+    end_date = striptime(dates_rules["End"])
+    
+    specific_dates = []
+    if dates_rules.get("Others") != []:
+      specific_dates = [datetime.datetime.strptime(i, default_format_date).date() for i in dates_rules.get("Others")]
+
+    if reminder_date >= start_date and reminder_date <= end_date or reminder_date in specific_dates:
+      day = reminder_date.strftime("%b %d %Y")
+      timeline[day] = dates_dict[each_event]
+# ====================================
+
+
 # ::::: ADD EVENTS - CALENDAR :::::
 def add_to_ical(ical_events: list) -> None:
   with open(ical_file, "wb+") as f:
@@ -212,7 +281,7 @@ def add_to_ical(ical_events: list) -> None:
 
   for file_name, date, repeat, dir_name in ical_events:
     event = Event()
-    date_reminder = datetime.datetime.strptime(date, default_format_date).date()
+    date_reminder = striptime(date)
 
     event.add('summary', file_name)
     event.add('dtstart', date_reminder)
@@ -231,29 +300,29 @@ def add_to_ical(ical_events: list) -> None:
 
 # ::::: SAVE CHANGES :::::
 def save_timeline() -> None:
-  for time_date, lst_events in timeline.items():
-    if timeline.get(time_date) != []: # TO-DO | find the right way for this line
+  for date_event, lst_events in timeline.items():
+    
+    if timeline.get(date_event) != []: # TO-DO | find the right way for this line
       content_date = concatenate_files(lst_events)
-      init_template(mode="a", content=f"date: {time_date}\ncontent: {content_date}\n")
+      init_template(mode="a", content=f"date: {date_event}\ncontent: {content_date}\n")
 # ====================================
 
 
 # ::::: MAIN :::::
+@try_log
 def main() -> None:
   init_template(mode="w", content=default_template)
-  md_files = list(filter(yaml_files, [item for item in Path(vault).rglob("*.md") if str(item) != timeline_file]))
-  valid_files = (map(check_metadata , md_files))
-
-  for path_file in valid_files:
+  
+  for path_file in get_note_paths():
     get_reminder_details(path_file)
-
+  
   build_timeline()
   save_timeline()
-
+  
   if ical_enable:
     add_to_ical(ical_events)
 
-  print("Done!")
+  return len(list(get_note_paths()))
 # ====================================
 
 
