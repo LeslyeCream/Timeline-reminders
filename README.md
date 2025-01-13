@@ -188,6 +188,24 @@ In the near future I plan to separate the settings in a separate file for greate
 
 ***
 
+# What's new
+
+V 1.1
+
+- Fixed the issue that prevented images from being displayed on the timeline despite being enabled in settings.
+
+- From now on the script ignores hidden folders
+
+- Now capture images whether they are local or external links
+
+- Added the option to limit to a certain date frame notes that are added to the timeline, additionally you can choose specific dates that should be added but that are outside the given timeframe. Especially useful if you’re looking to keep track of everything you’ve captured/read in the previous year or even scroll through all your notes in a single note without using folders! 
+
+- In case of error now the terminal shows more information about the problem that causes it.
+
+- Code improvements.
+
+***
+
 # Contribution
 
 If this script has been very useful to you in your workflow or you are looking for a slightly customized version that best suits your needs, please consider leaving me a small tip. I would really appreciate it!
