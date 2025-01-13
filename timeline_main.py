@@ -58,48 +58,38 @@ logs = []
 # ====================================
 
 
-# ::::::HANDLE ERRORS :::::
-def try_log(func):
+# :::::: DECORATOR - HANDLE ERRORS :::::
+def watchdog(func):
   @wraps(func)
   def wrapper(*args, **kwargs):
-    try:
+    if func.__name__ != "main":
+      try:
+        args = func(*args, **kwargs)
+        return args
+      except Exception as e:
+        logs.append(f"FUNCTION: {func.__name__}\nERROR: {e}")
+    else:
       args = func(*args, **kwargs)
-      return args
-    except Exception as e:
-      error = f"FUNCTION: {func.__name__}\nERROR: {e}"
-      logs.append(error)
+      if logs:
+        for log in set(logs):
+          handle_msg(msg=log)
+      else:
+        handle_msg(msg=f"Timeline created! 🎉 | {args} notes added")
   return wrapper
 # ====================================
 
 
 # ::::: HANDLE MESSAGES :::::
 def handle_msg(**kwargs):
-  print(kwargs["sep"] * 20)
-  print(kwargs["msg"])
-  print(kwargs["sep"] * 20)
-# ====================================
-
-
-# ::::: CHECK LOG :::::
-def run_log(*args) -> None:
-  if logs != []:
-    for log in set(logs):
-      handle_msg(msg=log, sep="-")
-  else:
-    handle_msg(msg=f"Timeline created! 🎉 | {args[0]} notes added", sep="·")
-# ====================================
-
-
-# ::::: HANDLE MESSAGES :::::
-def handle_msg(**kwargs):
-  print(kwargs["sep"] * 20)
-  print(kwargs["msg"])
-  print(kwargs["sep"] * 20)
+  msg = kwargs["msg"]
+  print("-" * len(msg))
+  print(msg)
+  print("-" * len(msg))
 # ====================================
 
 
 # ::::: DASHBOARD :::::
-@try_log
+@watchdog
 def init_template(**kwargs) -> None:
   with open(timeline_file, kwargs["mode"]) as f:
     f.write(kwargs["content"])
@@ -107,7 +97,7 @@ def init_template(**kwargs) -> None:
 
 
 # ::::: GET FILES :::::
-@try_log
+@watchdog
 def get_note_paths() -> list:
   md_files = filter(yaml_files, [path for path in Path(vault).rglob("*.md") if str(path) != timeline_file and not str(path.parent.name).startswith(".")])
   valid_files = list(map(check_metadata , md_files))
@@ -117,7 +107,7 @@ def get_note_paths() -> list:
 
 
 # ::::: CHECK FORMAT DATE :::::
-@try_log
+@watchdog
 def check_format_date(input_date: str) -> str:
   try:
     formated_date = parser.parse(input_date).strftime(default_format_date)
@@ -129,7 +119,7 @@ def check_format_date(input_date: str) -> str:
 
 
 # ::::: ONLY YAML FILES:::::
-@try_log
+@watchdog
 def yaml_files(md_file) -> str:
   with open(md_file, "r") as f:
     if match := re.search(f"{date_regex}", f.read()):
@@ -138,7 +128,7 @@ def yaml_files(md_file) -> str:
 
 
 # ::::: STRPTIME :::::
-@try_log
+@watchdog
 def striptime(input_date) -> datetime.date:
   output_date = datetime.datetime.strptime(input_date, default_format_date).date()
   return output_date
@@ -146,7 +136,7 @@ def striptime(input_date) -> datetime.date:
 
 
 # ::::: CHECK REMINDER :::::
-@try_log
+@watchdog
 def check_metadata (path_file: str) -> list:
   with open(path_file, "r") as f:
     content = f.read()
@@ -178,7 +168,7 @@ def check_metadata (path_file: str) -> list:
 
 
 # ::::: SEARCH & GET REMINDERS FROM PROPERTIES :::::
-@try_log
+@watchdog
 def get_reminder_details(metadata: list) -> None:
   path_file, date_key, repeat_key, priority_key, thumb_key, style_key = metadata[0:7]
   dir_name = path_file.parent.name
@@ -200,7 +190,7 @@ def get_reminder_details(metadata: list) -> None:
 
 
 # ::::: CHECK PRIORITY AND SET DIR NAMES :::::
-@try_log
+@watchdog
 def set_priority_dir(dir_name, show_dirnames, priority_key) -> str:
   if show_dirnames:
     if priority_key:
@@ -220,7 +210,7 @@ def set_priority_dir(dir_name, show_dirnames, priority_key) -> str:
 
 
 # ::::: SCHEDULE OLD DATES :::::
-@try_log
+@watchdog
 def schedule_old_dates(input_date: str, repeat_key: int) -> str:
   reminder = striptime(input_date)
 
@@ -238,7 +228,7 @@ def schedule_old_dates(input_date: str, repeat_key: int) -> str:
 
 
 # ::::: CONCATENATE LIST OF REMINDERS :::::
-@try_log
+@watchdog
 def concatenate_files(files: list) -> list:
   each_day = (i for i in files)
   format_content = "\n\n".join(str(i) for i in each_day)
@@ -247,7 +237,7 @@ def concatenate_files(files: list) -> list:
 
 
 # ::::: BUILD TIMELINE :::::
-@try_log
+@watchdog
 def build_timeline() -> None: 
   for each_event in sorted(dates_dict, reverse=reverse_sort):
     content_week = [] # needed for to group week dates
@@ -281,7 +271,7 @@ def build_timeline() -> None:
 
 
 # ::::: SIMPLE MODE :::::
-@try_log
+@watchdog
 def run_simple_mode(reminder_date: str, each_event: str) -> None:
   if limited_dates == False:
     day = reminder_date.strftime("%b %d %Y")
@@ -302,7 +292,7 @@ def run_simple_mode(reminder_date: str, each_event: str) -> None:
 
 
 # ::::: ADD EVENTS - CALENDAR :::::
-@try_log
+@watchdog
 def add_to_ical(ical_events: list) -> None:
   with open(ical_file, "wb+") as f:
     f.write(b"")
@@ -329,17 +319,18 @@ def add_to_ical(ical_events: list) -> None:
 
 
 # ::::: SAVE CHANGES :::::
-@try_log
+@watchdog
 def save_timeline() -> None:
   for date_event, lst_events in timeline.items():
     
-    if timeline.get(date_event) != []: # TO-DO | find the right way for this line
+    if timeline.get(date_event): # TO-DO | find the right way for this line
       content_date = concatenate_files(lst_events)
       init_template(mode="a", content=f"date: {date_event}\ncontent: {content_date}\n")
 # ====================================
 
 
 # ::::: MAIN :::::
+@watchdog
 def main() -> None:
   init_template(mode="w", content=default_template)
   
@@ -353,7 +344,7 @@ def main() -> None:
   if ical_enable:
     add_to_ical(ical_events)
 
-  run_log(num_notes)
+  return num_notes
 # ====================================
 
 
