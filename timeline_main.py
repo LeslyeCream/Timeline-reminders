@@ -4,8 +4,8 @@ from functools import wraps
 from pathlib import Path
 import functools
 import datetime
-import functools
 import timeit
+import time
 import re
 
 
@@ -36,7 +36,7 @@ folder_rules = {
 
 
 # ::::: VARIABLES :::::
-date_regex = f"(?<={main_yaml_key}\:\s).*" #TO-DO | Improve this
+date_regex = f"(?<={main_yaml_key}\\:\\s).*"
 repeat_regex = r"(?<=Repeat\:\s)\d+"
 priority_regex = r"(?<=Priority\:\s)[1-6]"
 style_regex = r"(?<=Style\:\s).*"
@@ -69,12 +69,15 @@ def watchdog(func):
       except Exception as e:
         logs.append(f"FUNCTION: {func.__name__}\nERROR: {e}")
     else:
+      start = time.perf_counter()
       args = func(*args, **kwargs)
+      end = time.perf_counter()
       if logs:
         for log in set(logs):
           handle_msg(msg=log)
       else:
-        handle_msg(msg=f"Timeline created! 🎉 | {args} notes added")
+        result = f"Timeline created! 🎉 | {args} notes added in {end - start:.2f} seconds"
+        handle_msg(msg=result)
   return wrapper
 # ====================================
 
@@ -99,7 +102,7 @@ def init_template(**kwargs) -> None:
 # ::::: GET FILES :::::
 @watchdog
 def get_note_paths() -> list:
-  md_files = filter(yaml_files, [path for path in Path(vault).rglob("*.md") if str(path) != timeline_file and not str(path.parent.name).startswith(".")])
+  md_files = filter(only_yaml_files, [path for path in Path(vault).rglob("*.md") if str(path) != timeline_file and not str(path.parent.name).startswith(".")])
   valid_files = list(map(check_metadata , md_files))
   num_notes = len(valid_files)
   return valid_files, num_notes
@@ -120,7 +123,7 @@ def check_format_date(input_date: str) -> str:
 
 # ::::: ONLY YAML FILES:::::
 @watchdog
-def yaml_files(md_file) -> str:
+def only_yaml_files(md_file) -> str:
   with open(md_file, "r") as f:
     if match := re.search(f"{date_regex}", f.read()):
       return md_file
