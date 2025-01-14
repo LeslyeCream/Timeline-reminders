@@ -85,12 +85,19 @@ default_template = f"```timeline-labeled\n[line-3, body-1]\n"
 vault = "/storage/emulated/0/Documents/Obsidian/Calendar"
 timeline_file = "/storage/emulated/0/Documents/Obsidian/Calendar/Calendar.md"
 ical_file = "/storage/emulated/0/Documents/Obsidian/Calendar/.Calendar.ics"
+main_yaml_key = "Created"
 reverse_sort = False
 show_expired_dates = True
 show_dirnames = True
 show_images = True
 ical_enable = True
 simple_mode = False
+limited_dates = False
+dates_rules = {
+	"Start": "2018-01-01", 
+	"End": "2018-12-31",
+	"Others": ["2024-12-01", "2023-12-31"]
+	}
 folder_rules = {
 	"Default": ",
 	"Birthdays":
@@ -112,7 +119,8 @@ folder_rules = {
 `ical_file` should be the path where the ical file will be saved to sync with your calendar.
 
 ***
-
+`main_yaml_key` This is the main metadata key that the script will use to extract the date of each note. By default is Reminder but I can be any other: Created, Updated, Date, etc.
+***
 `reverse_sort` Reverses the order of the timeline (more distant reminders first or vice versa). By default the closest ones to the current date is displayed.
 
 ***
@@ -137,6 +145,40 @@ folder_rules = {
 ***
 
 `simple_mode` Organize your notes by their respective dates
+
+***
+`limited_dates` Enables limits on the date range of notes to be added to the timeline.
+
+***
+
+`dates_rules` Is the set of rules regarding the dates in the metadata within the notes to be added to the timeline. It consists of three values:
+
+`Start` and `End` Represents from and to what date the notes should be added to the timeline.
+
+`Others` Is a list with specific dates that should be included in the timeline and is not within the range of `Start` and `End`. It must follow the following structure:
+
+```python
+["DATE1", "DATE2", "DATE3"]
+
+```
+
+You can ignore the inclusion of specific dates by leaving the list empty:
+
+```python
+"Others": []
+```
+
+So for example if I want to create a timeline with all my notes from the year 2024 but in addition I want it to include the notes I saved on Valentine's Day 2013 the configuration for `date_rules` should be:
+
+```python
+dates_rules = {
+	"Start": "2024-01-01", 
+	"End": "2024-12-31",
+	"Others": ["2013-02-14"]
+	}
+```
+
+**Important:** the date format for `dates_rules` must be the same as used in `default_format_dates`.
 
 ***
 
