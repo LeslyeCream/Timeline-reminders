@@ -99,9 +99,9 @@ dates_rules = {
 	"Others": ["2024-12-01", "2023-12-31"]
 	}
 folder_rules = {
-	"Default": ",
-	"Birthdays":
-	"Anniversaries":"
+	"Default": "`",
+	"Birthdays": "#",
+	"Anniversaries":" ##"
 }
 ```
 
