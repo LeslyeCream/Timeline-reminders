@@ -101,7 +101,7 @@ dates_rules = {
 folder_rules = {
 	"Default": "`",
 	"Birthdays": "#",
-	"Anniversaries":" ##"
+	"Anniversaries": "##"
 }
 ```
 
