@@ -14,13 +14,14 @@ default_template = f"```timeline-labeled\n[line-3, body-1]\n"
 vault = "/storage/emulated/0/Documents/Obsidian/Calendar"
 timeline_file = "/storage/emulated/0/Documents/Obsidian/Calendar/Calendar.md"
 ical_file = "/storage/emulated/0/Documents/Obsidian/Calendar/.Calendar.ics"
+enable_timeline = True
 main_yaml_key = "Reminder"
-reverse_sorted = True
+reverse_sorted = False
 expired_dates = True
 default_format_date = "%Y-%m-%d"
 show_dirnames = True
 show_images = True
-ical_enable = False
+ical_enable = True
 simple_mode = False
 limited_dates = False
 dates_rules = {
@@ -33,6 +34,7 @@ folder_rules = {
   "Birthdays": "#",
   "Anniversaries": "##"
   }
+excluded_paths = [timeline_file, ".obsidian", ".trash"]
 # ====================================
 
 
@@ -98,9 +100,9 @@ def init_template(**kwargs) -> None:
 @watchdog
 def get_valid_notes() -> int:
   global num_notes
-  note_files = [path for path in Path(vault).rglob("*.md") if str(path) != timeline_file and not str(path.parent.name).startswith(".")]
-  note_paths = list(map(only_yaml_files, note_files))
-  [build_yaml_info(note_path) for note_path in note_paths if note_path != None]
+  note_files = (path for path in Path(vault).rglob("*.md") if not str(path.parent.name) in excluded_paths)
+  note_paths = [path for path in list(map(only_yaml_files, note_files)) if path != None]
+  [build_yaml_info(note_path) for note_path in note_paths]
   return (num_notes := len(note_paths))
 # ====================================
 
@@ -211,7 +213,7 @@ def schedule_old_dates(input_date: str, repeat_key: int) -> str:
 # ====================================
 
 
-# ::::: CONCATENATE LIST OF REMINDERS :::::
+# ::::: CONCATENATE LIST REMINDERS :::::
 @watchdog
 def concatenate_files(files: list) -> list:
   each_day = (i for i in files)
@@ -235,22 +237,23 @@ def build_timeline() -> None:
 
     if reminder_date < this_year and reminder_date < today and expired_dates:
       day = reminder_date.strftime("%b %d %Y")
-      timeline[day] = dates_dict[each_event] # TO-DO | Fix this
+      timeline["Expired"] = dates_dict[each_event] # TO-DO | Fix this
       continue
 
-    if reminder_date == today:
+    elif reminder_date == today:
       timeline["Today"] = dates_dict[each_event]
       continue
 
-    if reminder_date == tomorrow:
+    elif reminder_date == tomorrow:
       timeline["Tomorrow"] = dates_dict[each_event]
       continue
 
-    if reminder_date < this_week and reminder_date > today:
+    elif reminder_date < this_week and reminder_date > today:
       day = reminder_date.strftime("%A")
       timeline[day] = dates_dict[each_event]
       continue
-    """
+    
+    
     if reminder_date < this_year and reminder_date > this_week:
       day = reminder_date.strftime("%b %d")
       timeline[day] = dates_dict[each_event]
@@ -260,7 +263,7 @@ def build_timeline() -> None:
       day = reminder_date.strftime("%b %d %Y")
       timeline[day] = dates_dict[each_event]
       continue
-    """
+    
 # ====================================
 
 
@@ -329,10 +332,11 @@ def main() -> None:
 
   get_valid_notes()
   build_timeline()
-  save_timeline()
+  if enable_timeline:
+  	save_timeline()
 
   if ical_enable and not simple_mode:
-    add_to_ical(ical_events)
+     add_to_ical(ical_events)
 # ====================================
 
 
