@@ -232,7 +232,11 @@ In the near future I plan to separate the settings in a separate file for greate
 
 # What's new
 
-V 1.1
+**V 1.2**
+- Added option to exclude subfolders
+- Minor code changes
+
+**V 1.1**
 
 - Fixed the issue that prevented images from being displayed on the timeline despite being enabled in settings.
 
