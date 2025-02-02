@@ -117,7 +117,8 @@ excluded_paths = [timeline_file, ".obsidian", ".trash"]
 `timeline_file` must be the path where you will create the file with the timeline. 
 
 ***
-
+`enable_timeline` Enables the creation of a timeline. It can be used alongside `ical_enable` to ignore the timeline and add directly as calendar events.
+***
 `ical_file` should be the path where the ical file will be saved to sync with your calendar.
 
 ***
@@ -192,7 +193,7 @@ dates_rules = {
 
 ![Screenshot_20241228-180247_cropped](https://github.com/user-attachments/assets/cab50dc5-0848-4ea3-8107-4123a0ca2b04)
 
-
+`excluded_paths` A list with the names of the directories that should be omitted when creating the timeline. By default, it includes the file that will contain the timeline itself, as well as Obsidian's hidden folders.
 ***
 
 # Metadata available
