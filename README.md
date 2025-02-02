@@ -109,6 +109,7 @@ excluded_paths = [timeline_file, ".obsidian", ".trash"]
 
 ***
 `default_template` It's the code needed to create the timeline inside the note, no need to change it unless you're looking to change the appearance of the timeline. More information [here](https://github.com/George-debug/obsidian-timeline)
+***
 
 `Vault` is the path where the script should search for notes to be included in the timeline (as long as it explicitly contains a date metadata). If you don't want to alter the structure of your notes you can use the absolute path of your vault but I recommend creating a specific folder for it to avoid a constant mass scan.
 
@@ -192,6 +193,7 @@ dates_rules = {
 `folder_rules` Is a dictionary that stores the priority rules that should be applied to a certain folder containing reminders. For example: if my main folder is `Calendar` and contains a subfolder called `Birthdays` I can add a level 1 priority (i.e. a header H1) for all reminders within `Birthdays'. The default value is a code line style.
 
 ![Screenshot_20241228-180247_cropped](https://github.com/user-attachments/assets/cab50dc5-0848-4ea3-8107-4123a0ca2b04)
+***
 
 `excluded_paths` A list with the names of the directories that should be omitted when creating the timeline. By default, it includes the file that will contain the timeline itself, as well as Obsidian's hidden folders.
 ***
