@@ -85,6 +85,7 @@ default_template = f"```timeline-labeled\n[line-3, body-1]\n"
 vault = "/storage/emulated/0/Documents/Obsidian/Calendar"
 timeline_file = "/storage/emulated/0/Documents/Obsidian/Calendar/Calendar.md"
 ical_file = "/storage/emulated/0/Documents/Obsidian/Calendar/.Calendar.ics"
+enable_timeline = True
 main_yaml_key = "Created"
 reverse_sort = False
 show_expired_dates = True
@@ -103,6 +104,7 @@ folder_rules = {
 	"Birthdays": "#",
 	"Anniversaries": "##"
 }
+excluded_paths = [timeline_file, ".obsidian", ".trash"]
 ```
 
 ***
