@@ -205,7 +205,7 @@ dates_rules = {
 Reminder: 2024-12-26
 Repeat: 7
 Priorities: 1
-Style: 
+Style: ==
 ---
 ```
 
