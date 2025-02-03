@@ -8,7 +8,6 @@ import timeit
 import time
 import re
 
-
 # ::::: SETTINGS :::::
 default_template = f"```timeline-labeled\n[line-3, body-1]\n"
 vault = "/storage/emulated/0/Documents/Obsidian/Calendar"
@@ -51,6 +50,7 @@ this_year = datetime.datetime(today.year, 12, 31).date()
 dates_dict = {}
 ical_events = []
 logs = []
+num_notes = [0]
 # ====================================
 
 
@@ -61,6 +61,8 @@ def watchdog(func):
     if func.__name__ != "main":
       try:
         args = func(*args, **kwargs)
+        if func.__name__ == "get_notes":
+          num_notes[0] = args
         return args
       except Exception as e:
         logs.append(f"FUNCTION: {func.__name__}\nERROR: {e}")
@@ -70,10 +72,10 @@ def watchdog(func):
       end = time.perf_counter()
       if logs:
         output_log = "\n".join(log for log in set(logs))
-        handle_msg(msg=output_log)
+        handle_msg(msg=output_log, sep="-")
       else:
-        sucessful_msg = f"Timeline created! 🎉 | {num_notes} notes added in {end - start:.2f} seconds"
-        handle_msg(msg=sucessful_msg)
+        sucessful_msg = f"Timeline created! 🎉 | {num_notes[0]} notes added in {end - start:.2f} seconds"
+        handle_msg(msg=sucessful_msg, sep="-")
   return wrapper
 # ====================================
 
@@ -81,10 +83,11 @@ def watchdog(func):
 # ::::: HANDLE MESSAGES :::::
 def handle_msg(**kwargs):
   msg = kwargs["msg"]
+  sep = kwargs["sep"]
   length = int(len(msg) + 1)
-  print("-" * length)
+  print(sep * length)
   print(msg)
-  print("-" * length)
+  print(sep * length)
 # ====================================
 
 
@@ -98,12 +101,10 @@ def init_template(**kwargs) -> None:
 
 # ::::: GET FILES & METADATA :::::
 @watchdog
-def get_valid_notes() -> int:
-  global num_notes
-  note_files = (path for path in Path(vault).rglob("*.md") if not str(path.parent.name) in excluded_paths)
-  note_paths = [path for path in list(map(only_yaml_files, note_files)) if path != None]
-  [build_yaml_info(note_path) for note_path in note_paths]
-  return (num_notes := len(note_paths))
+def get_notes() -> int:
+  handle_msg(msg=f"Searching notes with '{main_yaml_key}' key, please wait...", sep='')
+  note_files = (only_yaml_files(path) for path in Path(vault).rglob("*.md") if path.parent.name not in excluded_paths)
+  return len([build_yaml_info(note_path) for note_path in note_files if note_path])
 # ====================================
 
 
@@ -330,7 +331,7 @@ def save_timeline() -> None:
 def main() -> None:
   init_template(file=timeline_file, mode="w", content=default_template)
 
-  get_valid_notes()
+  get_notes()
   build_timeline()
   if enable_timeline:
   	save_timeline()
