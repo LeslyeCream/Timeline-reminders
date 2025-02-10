@@ -8,6 +8,7 @@ import timeit
 import time
 import re
 
+
 # ::::: SETTINGS :::::
 default_template = f"```timeline-labeled\n[line-3, body-1]\n"
 vault = "/storage/emulated/0/Documents/Obsidian/Calendar"
@@ -20,7 +21,7 @@ expired_dates = True
 default_format_date = "%Y-%m-%d"
 show_dirnames = True
 show_images = True
-ical_enable = True
+ical_enable = False
 simple_mode = False
 limited_dates = False
 dates_rules = {
@@ -72,22 +73,18 @@ def watchdog(func):
       end = time.perf_counter()
       if logs:
         output_log = "\n".join(log for log in set(logs))
-        handle_msg(msg=output_log, sep="-")
+        handle_msg(msg=output_log)
       else:
         sucessful_msg = f"Timeline created! 🎉 | {num_notes[0]} notes added in {end - start:.2f} seconds"
-        handle_msg(msg=sucessful_msg, sep="-")
+        handle_msg(msg=sucessful_msg)
   return wrapper
 # ====================================
 
 
 # ::::: HANDLE MESSAGES :::::
-def handle_msg(**kwargs):
-  msg = kwargs["msg"]
-  sep = kwargs["sep"]
-  length = int(len(msg) + 1)
-  print(sep * length)
-  print(msg)
-  print(sep * length)
+def handle_msg(msg, sep="-"):
+  sep = f"{sep * int(len(msg) + 1)}"
+  print(f"{sep}\n{msg}\n{sep}")
 # ====================================
 
 
@@ -104,16 +101,17 @@ def init_template(**kwargs) -> None:
 def get_notes() -> int:
   handle_msg(msg=f"Searching notes with '{main_yaml_key}' key, please wait...", sep='')
   note_files = (only_yaml_files(path) for path in Path(vault).rglob("*.md") if path.parent.name not in excluded_paths)
-  return len([build_yaml_info(note_path) for note_path in note_files if note_path])
+  return len(list((build_yaml_info(note_path) for note_path in note_files if note_path)))
 # ====================================
 
 
 # ::::: ONLY YAML FILES:::::
 @watchdog
 def only_yaml_files(md_file) -> list:
-  with open(md_file, "r") as f:
-    file_content = f.read()
-    if date_key := re.search(f"{date_regex}", file_content):
+  with open(md_file, "r") as file:
+    yaml_block = "".join(line for line in file.readlines()[1:5])
+    if date_key := re.search(f"{date_regex}", yaml_block):
+      file_content = (lambda f: f.seek(0) or f.read())(file)
       return extract_metadata(date_key, file_content, md_file)
 # ====================================
 
@@ -214,15 +212,6 @@ def schedule_old_dates(input_date: str, repeat_key: int) -> str:
 # ====================================
 
 
-# ::::: CONCATENATE LIST REMINDERS :::::
-@watchdog
-def concatenate_files(files: list) -> list:
-  each_day = (i for i in files)
-  format_content = "\n\n".join(str(i) for i in each_day)
-  return format_content
-# ====================================
-
-
 # ::::: BUILD TIMELINE :::::
 @watchdog
 def build_timeline() -> None:
@@ -317,11 +306,7 @@ def add_to_ical(ical_events: list) -> None:
 # ::::: SAVE CHANGES :::::
 @watchdog
 def save_timeline() -> None:
-  timeline_complete = ""
-  for date_event, lst_events in timeline.items():
-    content_date = concatenate_files(lst_events)
-    timeline_complete += f"date: {date_event}\ncontent: {content_date}\n"
-
+  timeline_complete = "\n\n".join(f"date: {date_event}\ncontent: {"\n\n".join(str(i) for i in lst_events)}" for date_event, lst_events in timeline.items()) + "\n\n"
   init_template(file=timeline_file, mode="a", content=timeline_complete)
 # ====================================
 
@@ -334,7 +319,7 @@ def main() -> None:
   get_notes()
   build_timeline()
   if enable_timeline:
-  	save_timeline()
+    save_timeline()
 
   if ical_enable and not simple_mode:
      add_to_ical(ical_events)
