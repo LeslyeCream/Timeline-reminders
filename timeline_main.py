@@ -2,6 +2,7 @@ from icalendar import Calendar, Event
 from dateutil import parser
 from functools import wraps
 from pathlib import Path
+import subprocess
 import functools
 import datetime
 import timeit
@@ -10,24 +11,24 @@ import re
 
 
 # ::::: SETTINGS :::::
-default_template = f"```timeline-labeled\n[line-3, body-1]\n"
-vault = "/storage/emulated/0/Documents/Obsidian/Calendar"
-timeline_file = "/storage/emulated/0/Documents/Obsidian/Calendar/Calendar.md"
-ical_file = "/storage/emulated/0/Documents/Obsidian/Calendar/.Calendar.ics"
+default_timeline = f"```timeline-labeled\n[line-3, body-1]\n"
+vault = "/storage/emulated/0/Documents/.Obsidian/Calendar"
+timeline_file = "/storage/emulated/0/Documents/.Obsidian/Calendar/Calendar.md"
+ical_file = "/storage/emulated/0/Documents/.Obsidian/Calendar/.Calendar.ics"
 enable_timeline = True
 main_yaml_key = "Reminder"
-reverse_sorted = False
+descending_sort = False
 expired_dates = True
 default_format_date = "%Y-%m-%d"
 show_dirnames = True
 show_images = True
-ical_enable = False
+ical_enable = True
 simple_mode = False
 limited_dates = False
 dates_rules = {
-  "Start": "2018-01-01",
-  "End": "2018-12-31",
-  "Others": ["2024-12-01", "2023-12-31"]
+  "Start": "2025-02-01",
+  "End": "2025-02-28",
+  "Others": []
   }
 folder_rules = {
   "Default": "`",
@@ -38,20 +39,17 @@ excluded_paths = [timeline_file, ".obsidian", ".trash"]
 # ====================================
 
 
-# ::::: VARIABLES :::::
-date_regex = f"(?<={main_yaml_key}\\:\\s).*"
-repeat_regex = r"(?<=Repeat\:\s)\d+"
-priority_regex = r"(?<=Priority\:\s)[1-6]"
-style_regex = r"(?<=Style\:\s).*"
-thumb_regex = r"\!\[+?.*(\.jpg|png|heic|webp|jpeg)(\]+|\))"
-today = datetime.date.today()
-tomorrow = today + datetime.timedelta(days=1)
-this_week = today + datetime.timedelta(days=7)
-this_year = datetime.datetime(today.year, 12, 31).date()
-dates_dict = {}
-ical_events = []
-logs = []
-num_notes = [0]
+# ::::: CONSTANTS :::::
+TODAY = datetime.date.today()
+TOMORROW = TODAY + datetime.timedelta(days=1)
+THIS_WEEK = TODAY + datetime.timedelta(days=7)
+THIS_YEAR = datetime.datetime(TODAY.year, 12, 31).date()
+DATE_REGEX = re.compile(f"(?<={main_yaml_key}\\:\\s)\\d+\\-\\d+\\-\\d+")
+REPEAT_REGEX = re.compile(r"(?<=Repeat\:\s)\d+")
+PRIORITY_REGEX = re.compile(r"(?<=Priority\:\s)[1-6]")
+STYLE_REGEX = re.compile(r'(?<=Style\:\s).+(?=\")')
+THUMB_REGEX = re.compile(r"\!\[+?.*(\.jpg|png|heic|webp|jpeg)(\]+|\))")
+
 # ====================================
 
 
@@ -59,37 +57,31 @@ num_notes = [0]
 def watchdog(func):
   @wraps(func)
   def wrapper(*args, **kwargs):
-    if func.__name__ != "main":
-      try:
-        args = func(*args, **kwargs)
-        if func.__name__ == "get_notes":
-          num_notes[0] = args
-        return args
-      except Exception as e:
-        logs.append(f"FUNCTION: {func.__name__}\nERROR: {e}")
-    else:
+    try:
+      logs = []
       start = time.perf_counter()
       args = func(*args, **kwargs)
       end = time.perf_counter()
-      if logs:
-        output_log = "\n".join(log for log in set(logs))
-        handle_msg(msg=output_log)
-      else:
-        sucessful_msg = f"Timeline created! 🎉 | {num_notes[0]} notes added in {end - start:.2f} seconds"
-        handle_msg(msg=sucessful_msg)
+    except Exception as e:
+      logs.append(f"ERROR: {e}")
+    subprocess.run("clear")
+    if not logs:
+      sucessful_msg = f"Timeline created! 🎉 | {args} {"notes" if simple_mode else "reminders"} added in {end - start:.1f} seconds"
+      show_message(msg=sucessful_msg)
+    else:
+      show_message(msg="\n".join([log for log in logs]), sep="/")
   return wrapper
 # ====================================
 
 
-# ::::: HANDLE MESSAGES :::::
-def handle_msg(msg, sep="-"):
-  sep = f"{sep * int(len(msg) + 1)}"
-  print(f"{sep}\n{msg}\n{sep}")
+# ::::: SHOW MESSAGES :::::
+def show_message(msg: str, sep="-") -> None:
+  line = f"{sep * int(len(msg) + 1)}"
+  print(f"{line}\n{msg}\n{line}")
 # ====================================
 
 
 # ::::: DASHBOARD :::::
-@watchdog
 def init_template(**kwargs) -> None:
   with open(str(kwargs["file"]), kwargs["mode"]) as f:
     f.write(kwargs["content"])
@@ -97,113 +89,91 @@ def init_template(**kwargs) -> None:
 
 
 # ::::: GET FILES & METADATA :::::
-@watchdog
-def get_notes() -> int:
-  handle_msg(msg=f"Searching notes with '{main_yaml_key}' key, please wait...", sep='')
-  note_files = (only_yaml_files(path) for path in Path(vault).rglob("*.md") if path.parent.name not in excluded_paths)
-  return len(list((build_yaml_info(note_path) for note_path in note_files if note_path)))
+def get_info_files() -> dict:
+  valid_reminders = filter(None, (only_yaml_files(path) for path in Path(vault).rglob("*.md") if not path.parent.name in excluded_paths))
+  return format_reminders(valid_reminders)
 # ====================================
 
 
 # ::::: ONLY YAML FILES:::::
-@watchdog
-def only_yaml_files(md_file) -> list:
-  with open(md_file, "r") as file:
-    yaml_block = "".join(line for line in file.readlines()[1:5])
-    if date_key := re.search(f"{date_regex}", yaml_block):
-      file_content = (lambda f: f.seek(0) or f.read())(file)
-      return extract_metadata(date_key, file_content, md_file)
-# ====================================
+def only_yaml_files(path_file) -> object:  # TO-DO | Find the right term
+  with open(path_file, "r") as file:
+    yaml_block = "".join(line for line in file.readlines()[1:10])
 
+    if main_date := DATE_REGEX.search(yaml_block):
+      date_key = parser.parse(main_date.group()).strftime(default_format_date)
 
-# ::::: CHECK REMINDER :::::
-@watchdog
-def extract_metadata (date_key: str, content: str, md_file: str) -> list:
-  date_key = formated_date = str(parser.parse(date_key.group()).strftime(default_format_date))
+      repeat_key = 0 if not (repeat_match := REPEAT_REGEX.search(yaml_block)) else int(repeat_match.group())
+      priority_key = None if not (priority_match := PRIORITY_REGEX.search(yaml_block)) else int(priority_match.group())
+      style_key = "" if not (style_match := STYLE_REGEX.search(yaml_block)) else style_match.group()
 
-  if repeat_key := re.search(repeat_regex, content):
-    repeat_key = int(repeat_key.group())
+      content = (lambda f: f.seek(0) or f.read())(file) if show_images else ""  # TO-DO | Fix this
+      thumb_key = thumb_match.group() if (thumb_match := THUMB_REGEX.search(content)) and show_images else ""
 
-  if priority_key := re.search(priority_regex, content):
-    priority_key = int(priority_key.group())
-
-  if show_images:
-    if thumb_key := re.search(thumb_regex, content):
-      thumb_key = thumb_key.group()
-    else:
-      thumb_key = ""
-  else:
-    thumb_key = ""
-
-  if style_key := re.search(style_regex, content):
-    style_key = str(style_key.group()).replace('"','').strip()
-  else:
-    style_key = ""
-
-  return [md_file, date_key, repeat_key, priority_key, thumb_key, style_key]
+      return [path_file, date_key, repeat_key, priority_key, thumb_key, style_key]
 # ====================================
 
 
 # ::::: SEARCH & GET REMINDERS FROM PROPERTIES :::::
-@watchdog
-def build_yaml_info(metadata: list) -> None:
-  path_file, date_key, repeat_key, priority_key, thumb_key, style_key = metadata[0:7]
-  dir_name = path_file.parent.name
-  name_file = path_file.stem
+def format_reminders(valid_reminders: list) -> list:
+  num_reminders = 0
+  group_dates = {}
+  ical_events = []
 
-  head_dir_name = set_priority_dir(dir_name, show_dirnames, priority_key)
+  for path_file, date_key, repeat_key, priority_key, thumb_key, style_key in valid_reminders:
 
-  reminder_date = schedule_old_dates(date_key, repeat_key)
-  backlink_name = f"{head_dir_name} - {style_key}[[{name_file}]]{style_key} {thumb_key}"
+    dir_name = path_file.parent.name
+    name_file = path_file.stem
+    num_reminders += 1
 
-  if reminder_date in dates_dict:
-    dates_dict[reminder_date].append(backlink_name)
-  else:
-    dates_dict[reminder_date] = [backlink_name]
-
-  if ical_enable:
-    ical_events.append([name_file, reminder_date, repeat_key, dir_name])
-# ====================================
+    header_dir_name = set_prio_header(dir_name, priority_key) if show_dirnames else ""
+    content_event = f"{header_dir_name} - {style_key}[[{name_file}]]{style_key} {thumb_key}"
+    reminder_date = schedule_old_dates(date_key, repeat_key)
 
 
-# ::::: STRPTIME :::::
-@watchdog
-def striptime(input_date) -> datetime.date:
-  output_date = datetime.datetime.strptime(input_date, default_format_date).date()
-  return output_date
-# ====================================
+    if reminder_date in group_dates:
+      group_dates[reminder_date].append(content_event)
 
-
-# ::::: CHECK PRIORITY AND SET DIR NAMES :::::
-@watchdog
-def set_priority_dir(dir_name, show_dirnames, priority_key) -> str:
-  if show_dirnames:
-    if priority_key:
-      head_dir_name = (f"{'#' * priority_key} {dir_name} \n")
     else:
-      if dir_name in folder_rules.keys():
-        head_dir_name = f"{folder_rules.get(dir_name)} {dir_name}\n"
-      else:
-        default = folder_rules.get("Default")
-        head_dir_name = (f"{default} {dir_name} {default}\n")
+      group_dates[reminder_date] = [content_event]
 
-  else: # disabled dir names
-    head_dir_name = ""
+    if ical_enable:
+      ical_events.append([name_file, reminder_date, repeat_key, dir_name])
+
+  return num_reminders, group_dates, ical_events
+# ====================================
+
+
+# ::::: GET DATETIME OBJECT FROM REMINDER STR :::::
+def get_datetime(input_date: str) -> object:  # TO-DO | Find the right term
+  format_date = datetime.datetime.strptime(input_date, default_format_date).date()
+  return format_date
+# ====================================
+
+
+# ::::: CHECK PRIORITY AND SET HEADERS STYLE :::::
+def set_prio_header(dir_name: str, priority_key: int) -> str:
+  if priority_key:
+    head_dir_name = (f"{'#' * priority_key} {dir_name}\n")
+
+  elif dir_name in folder_rules.keys():
+    head_dir_name = (f"{folder_rules.get(dir_name)} {dir_name}\n")
+
+  else:
+    default_style = folder_rules.get("Default")
+    head_dir_name = (f"{default_style} {dir_name} {default_style}\n")
 
   return head_dir_name
 # ====================================
 
 
 # ::::: SCHEDULE OLD DATES :::::
-@watchdog
 def schedule_old_dates(input_date: str, repeat_key: int) -> str:
-  reminder = striptime(input_date)
+  reminder = get_datetime(input_date)
 
-  if reminder >= today:
-    return input_date
+  if repeat_key and not reminder >= TODAY:
 
-  elif repeat_key != None:
-    while reminder < today:
+    while reminder < TODAY:
       reminder += datetime.timedelta(days=repeat_key)
     return str(reminder)
 
@@ -213,89 +183,89 @@ def schedule_old_dates(input_date: str, repeat_key: int) -> str:
 
 
 # ::::: BUILD TIMELINE :::::
-@watchdog
-def build_timeline() -> None:
-  global timeline
+def build_timeline(group_dates: dict) -> dict:
+  dates_collection = sorted(group_dates.items(), reverse=descending_sort)
+  expired_group = []
   timeline = {}
-  for each_event in sorted(dates_dict, reverse=reverse_sorted):
-    content_week = [] # needed for to group week dates
-    reminder_date = striptime(each_event.strip())
+  
 
-    if simple_mode:
-      run_simple_mode(reminder_date, each_event)
+  for key_date, events_group in dates_collection:
+    reminder_date = get_datetime(key_date)
+
+  # ::::: Calendar mode :::::
+
+    if reminder_date < THIS_YEAR and reminder_date < TODAY and expired_dates:
+      expired_group.append("".join(events_group))
+      timeline["Expired"] = expired_group
       continue
 
-    if reminder_date < this_year and reminder_date < today and expired_dates:
-      day = reminder_date.strftime("%b %d %Y")
-      timeline["Expired"] = dates_dict[each_event] # TO-DO | Fix this
+    elif reminder_date == TODAY:
+      timeline["Today"] = events_group
       continue
 
-    elif reminder_date == today:
-      timeline["Today"] = dates_dict[each_event]
+    elif reminder_date == TOMORROW:
+      timeline["Tomorrow"] = events_group
       continue
 
-    elif reminder_date == tomorrow:
-      timeline["Tomorrow"] = dates_dict[each_event]
-      continue
-
-    elif reminder_date < this_week and reminder_date > today:
+    elif reminder_date < THIS_WEEK and reminder_date > TODAY:
       day = reminder_date.strftime("%A")
-      timeline[day] = dates_dict[each_event]
+      timeline[day] = events_group
       continue
-    
-    
-    if reminder_date < this_year and reminder_date > this_week:
+
+    elif reminder_date < THIS_YEAR and reminder_date > THIS_WEEK:
       day = reminder_date.strftime("%b %d")
-      timeline[day] = dates_dict[each_event]
+      timeline[day] = events_group
       continue
 
-    if reminder_date > this_year:
+    elif reminder_date > THIS_YEAR:
       day = reminder_date.strftime("%b %d %Y")
-      timeline[day] = dates_dict[each_event]
+      timeline[day] = events_group
       continue
-    
+
+    else:
+
+  # ::::: Simple mode :::::
+
+      if not limited_dates:
+        day = reminder_date.strftime("%b %d %Y")
+        timeline[day] = events_group
+        continue
+
+      else:
+        start_date = get_datetime(dates_rules["Start"])
+        end_date = get_datetime(dates_rules["End"])
+
+        if dates_rules.get("Others"):
+          custom_dates = []
+          custom_dates = [datetime.datetime.strptime(i, default_format_date).date() for i in dates_rules.get("Others")]
+          continue
+
+        if key_date >= start_date and key_date <= end_date or key_date in custom_dates:
+          day = key_date.strftime("%b %d %Y")
+          timeline[day] = events_group
+          continue
+
+  return timeline
 # ====================================
 
 
-# ::::: SIMPLE MODE :::::
-@watchdog
-def run_simple_mode(reminder_date: str, each_event: str) -> None:
-  if not limited_dates:
-    day = reminder_date.strftime("%b %d %Y")
-    timeline[day] = dates_dict[each_event]
-
-  else:
-    start_date = striptime(dates_rules["Start"])
-    end_date = striptime(dates_rules["End"])
-
-    specific_dates = []
-    if dates_rules.get("Others"):
-      specific_dates = [datetime.datetime.strptime(i, default_format_date).date() for i in dates_rules.get("Others")]
-
-    if reminder_date >= start_date and reminder_date <= end_date or reminder_date in specific_dates:
-      day = reminder_date.strftime("%b %d %Y")
-      timeline[day] = dates_dict[each_event]
-# ====================================
-
-
-# ::::: ADD EVENTS - CALENDAR :::::
-@watchdog
+# ::::: ADD EVENTS - ICALENDAR :::::
 def add_to_ical(ical_events: list) -> None:
   init_template(file=ical_file, mode="wb+", content=(empty := b""))
 
   cal = Calendar()
 
-  for file_name, date, repeat, dir_name in ical_events:
+  for file_name, date, repeat_value, dir_name in ical_events:
     event = Event()
-    date_reminder = striptime(date)
+    date_reminder = get_datetime(date)
 
     event.add('summary', file_name)
     event.add('dtstart', date_reminder)
     event.add('dtend', date_reminder)
     event.add('description', dir_name)
 
-    if repeat != None:
-      event.add('rrule', {'FREQ': 'DAILY', 'INTERVAL': repeat})
+    if repeat_value:
+      event.add('rrule', {'FREQ': 'DAILY', 'INTERVAL': repeat_value})
 
     cal.add_component(event)
 
@@ -304,25 +274,26 @@ def add_to_ical(ical_events: list) -> None:
 
 
 # ::::: SAVE CHANGES :::::
-@watchdog
-def save_timeline() -> None:
-  timeline_complete = "\n\n".join(f"date: {date_event}\ncontent: {"\n\n".join(str(i) for i in lst_events)}" for date_event, lst_events in timeline.items()) + "\n\n"
-  init_template(file=timeline_file, mode="a", content=timeline_complete)
+def save_timeline(timeline: dict) -> None:
+  structured_timeline = "\n\n".join(f"date: {date_event}\ncontent: {"\n\n".join(str(i) for i in lst_events)}" for date_event, lst_events in timeline.items()) + "\n\n"  #TO-DO | fix this
+  init_template(file=timeline_file, mode="a", content=structured_timeline)
 # ====================================
 
 
 # ::::: MAIN :::::
 @watchdog
 def main() -> None:
-  init_template(file=timeline_file, mode="w", content=default_template)
+  show_message(msg=f"Searching {"notes" if simple_mode else "reminders"} with '{main_yaml_key}' key, please wait...", sep='')
 
-  get_notes()
-  build_timeline()
+  num_reminders, group_dates, ical_events = get_info_files()
+
   if enable_timeline:
-    save_timeline()
+    init_template(file=timeline_file, mode="w", content=default_timeline)
+    save_timeline(build_timeline(group_dates))
+  
+  add_to_ical(ical_events) if ical_enable and not simple_mode else None
 
-  if ical_enable and not simple_mode:
-     add_to_ical(ical_events)
+  return num_reminders
 # ====================================
 
 
