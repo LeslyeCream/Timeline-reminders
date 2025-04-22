@@ -81,14 +81,15 @@ Before running the script make sure to change the required values in the setting
 Inside the script you will find the following settings:
 
 ```python
-default_template = f"```timeline-labeled\n[line-3, body-1]\n"
+default_timeline = f"```timeline-labeled\n[line-3, body-1]\n"
 vault = "/storage/emulated/0/Documents/Obsidian/Calendar"
 timeline_file = "/storage/emulated/0/Documents/Obsidian/Calendar/Calendar.md"
 ical_file = "/storage/emulated/0/Documents/Obsidian/Calendar/.Calendar.ics"
 enable_timeline = True
 main_yaml_key = "Created"
-reverse_sort = False
+descending_sort = False
 show_expired_dates = True
+default_format_date = "%Y-%m-%d"
 show_dirnames = True
 show_images = True
 ical_enable = True
@@ -108,7 +109,7 @@ excluded_paths = [timeline_file, ".obsidian", ".trash"]
 ```
 
 ***
-`default_template` It's the code needed to create the timeline inside the note, no need to change it unless you're looking to change the appearance of the timeline. More information [here](https://github.com/George-debug/obsidian-timeline)
+`default_timeline` It's the code needed to create the timeline inside the note, no need to change it unless you're looking to change the appearance. More information [here](https://github.com/George-debug/obsidian-timeline)
 ***
 
 `Vault` is the path where the script should search for notes to be included in the timeline (as long as it explicitly contains a date metadata). If you don't want to alter the structure of your notes you can use the absolute path of your vault but I recommend creating a specific folder for it to avoid a constant mass scan.
@@ -125,7 +126,7 @@ excluded_paths = [timeline_file, ".obsidian", ".trash"]
 ***
 `main_yaml_key` This is the main metadata key that the script will use to extract the date of each note. By default is Reminder but I can be any other: Created, Updated, Date, etc.
 ***
-`reverse_sort` Reverses the order of the timeline (more distant reminders first or vice versa). By default the closest ones to the current date is displayed.
+`descending_sort` Reverses the order of the timeline (more distant reminders first or vice versa). By default the closest ones to the current date is displayed.
 
 ***
 
@@ -236,6 +237,12 @@ In the near future I plan to separate the settings in a separate file for greate
 ***
 
 # What's new
+**V 1.3**
+- Significant changes to the general code logic making processing timelines with thousands of notes a bit faster. 
+
+- Fixed an issue where an empty timeline note would appear when `enable_timeline` was set to False.
+
+- Fixed an issue where the expired events group would only display one item instead of all of them.
 
 **V 1.2**
 - Added option to exclude subfolders
