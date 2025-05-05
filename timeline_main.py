@@ -5,7 +5,6 @@ from pathlib import Path
 import subprocess
 import functools
 import datetime
-import timeit
 import time
 import re
 
@@ -53,20 +52,20 @@ THUMB_REGEX = re.compile(r"\!\[+?.*(\.jpg|png|heic|webp|jpeg)(\]+|\))")
 # ====================================
 
 
-# :::::: DECORATOR - HANDLE ERRORS :::::
+# :::::: DECORATOR :::::
 def watchdog(func):
   @wraps(func)
   def wrapper(*args, **kwargs):
     try:
       logs = []
       start = time.perf_counter()
-      args = func(*args, **kwargs)
+      num_notes = func(*args, **kwargs)
       end = time.perf_counter()
     except Exception as e:
       logs.append(f"ERROR: {e}")
     subprocess.run("clear")
     if not logs:
-      sucessful_msg = f"Timeline created! 🎉 | {args} {"notes" if simple_mode else "reminders"} added in {end - start:.1f} seconds"
+      sucessful_msg = f"Timeline created! 🎉 | {num_notes} {"notes" if simple_mode else "reminders"} added in {end - start:.1f} seconds"
       show_message(msg=sucessful_msg)
     else:
       show_message(msg="\n".join([log for log in logs]), sep="/")
@@ -81,22 +80,21 @@ def show_message(msg: str, sep="-") -> None:
 # ====================================
 
 
-# ::::: DASHBOARD :::::
+# ::::: INIT TEMPLATE :::::
 def init_template(**kwargs) -> None:
   with open(str(kwargs["file"]), kwargs["mode"]) as f:
     f.write(kwargs["content"])
 # ====================================
 
 
-# ::::: GET FILES & METADATA :::::
+# ::::: GET INFO FILES :::::
 def get_info_files() -> dict:
-  valid_reminders = filter(None, (only_yaml_files(path) for path in Path(vault).rglob("*.md") if not path.parent.name in excluded_paths))
-  return format_reminders(valid_reminders)
+  return format_reminders(filter(None, (filter_yaml_files(path) for path in Path(vault).rglob("*.md") if not path.parent.name in excluded_paths)))
 # ====================================
 
 
 # ::::: ONLY YAML FILES:::::
-def only_yaml_files(path_file) -> object:  # TO-DO | Find the right term
+def filter_yaml_files(path_file) -> object:  # TO-DO | Find the right term
   with open(path_file, "r") as file:
     yaml_block = "".join(line for line in file.readlines()[1:10])
 
@@ -114,8 +112,8 @@ def only_yaml_files(path_file) -> object:  # TO-DO | Find the right term
 # ====================================
 
 
-# ::::: SEARCH & GET REMINDERS FROM PROPERTIES :::::
-def format_reminders(valid_reminders: list) -> list:
+# ::::: FORMAT REMINDERS :::::
+def format_reminders(valid_reminders: list) -> list: # TO-DO | maybe map for this(?)
   num_reminders = 0
   group_dates = {}
   ical_events = []
@@ -133,9 +131,11 @@ def format_reminders(valid_reminders: list) -> list:
 
     if reminder_date in group_dates:
       group_dates[reminder_date].append(content_event)
+      continue
 
     else:
       group_dates[reminder_date] = [content_event]
+      continue
 
     if ical_enable:
       ical_events.append([name_file, reminder_date, repeat_key, dir_name])
@@ -144,14 +144,14 @@ def format_reminders(valid_reminders: list) -> list:
 # ====================================
 
 
-# ::::: GET DATETIME OBJECT FROM REMINDER STR :::::
+# ::::: GET DATETIME OBJECT :::::
 def get_datetime(input_date: str) -> object:  # TO-DO | Find the right term
   format_date = datetime.datetime.strptime(input_date, default_format_date).date()
   return format_date
 # ====================================
 
 
-# ::::: CHECK PRIORITY AND SET HEADERS STYLE :::::
+# ::::: SET PRIO HEADER :::::
 def set_prio_header(dir_name: str, priority_key: int) -> str:
   if priority_key:
     head_dir_name = (f"{'#' * priority_key} {dir_name}\n")
@@ -249,7 +249,7 @@ def build_timeline(group_dates: dict) -> dict:
 # ====================================
 
 
-# ::::: ADD EVENTS - ICALENDAR :::::
+# ::::: ADD TO ICAL :::::
 def add_to_ical(ical_events: list) -> None:
   init_template(file=ical_file, mode="wb+", content=(empty := b""))
 
@@ -298,4 +298,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-  main()
+  main()  
