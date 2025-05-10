@@ -198,20 +198,16 @@ def build_timeline(group_dates: dict) -> dict:
     elif reminder_date == TODAY:
       timeline["Today"] = events_group
 
-
     elif reminder_date == TOMORROW:
       timeline["Tomorrow"] = events_group
-
 
     elif reminder_date < THIS_WEEK and reminder_date > TODAY:
       day = reminder_date.strftime("%A")
       timeline[day] = events_group
 
-
     elif reminder_date < THIS_YEAR and reminder_date > THIS_WEEK:
       day = reminder_date.strftime("%b %d")
       timeline[day] = events_group
-
 
     elif reminder_date > THIS_YEAR:
       day = reminder_date.strftime("%b %d %Y")
