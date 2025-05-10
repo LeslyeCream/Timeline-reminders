@@ -131,11 +131,11 @@ def format_reminders(valid_reminders: list) -> list: # TO-DO | maybe map for thi
 
     if reminder_date in group_dates:
       group_dates[reminder_date].append(content_event)
-      continue
+
 
     else:
       group_dates[reminder_date] = [content_event]
-      continue
+
 
     if ical_enable:
       ical_events.append([name_file, reminder_date, repeat_key, dir_name])
@@ -197,30 +197,30 @@ def build_timeline(group_dates: dict) -> dict:
     if reminder_date < THIS_YEAR and reminder_date < TODAY and expired_dates:
       expired_group.append("".join(events_group))
       timeline["Expired"] = expired_group
-      continue
+
 
     elif reminder_date == TODAY:
       timeline["Today"] = events_group
-      continue
+
 
     elif reminder_date == TOMORROW:
       timeline["Tomorrow"] = events_group
-      continue
+
 
     elif reminder_date < THIS_WEEK and reminder_date > TODAY:
       day = reminder_date.strftime("%A")
       timeline[day] = events_group
-      continue
+
 
     elif reminder_date < THIS_YEAR and reminder_date > THIS_WEEK:
       day = reminder_date.strftime("%b %d")
       timeline[day] = events_group
-      continue
+
 
     elif reminder_date > THIS_YEAR:
       day = reminder_date.strftime("%b %d %Y")
       timeline[day] = events_group
-      continue
+
 
     else:
 
@@ -229,7 +229,7 @@ def build_timeline(group_dates: dict) -> dict:
       if not limited_dates:
         day = reminder_date.strftime("%b %d %Y")
         timeline[day] = events_group
-        continue
+
 
       else:
         start_date = get_datetime(dates_rules["Start"])
@@ -238,12 +238,12 @@ def build_timeline(group_dates: dict) -> dict:
         if dates_rules.get("Others"):
           custom_dates = []
           custom_dates = [datetime.datetime.strptime(i, default_format_date).date() for i in dates_rules.get("Others")]
-          continue
+
 
         if key_date >= start_date and key_date <= end_date or key_date in custom_dates:
           day = key_date.strftime("%b %d %Y")
           timeline[day] = events_group
-          continue
+
 
   return timeline
 # ====================================
