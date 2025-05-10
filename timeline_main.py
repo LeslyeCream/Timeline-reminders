@@ -135,7 +135,6 @@ def format_reminders(valid_reminders: list) -> list: # TO-DO | maybe map for thi
     else:
       group_dates[reminder_date] = [content_event]
 
-
     if ical_enable:
       ical_events.append([name_file, reminder_date, repeat_key, dir_name])
 
