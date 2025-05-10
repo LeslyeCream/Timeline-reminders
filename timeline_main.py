@@ -221,7 +221,6 @@ def build_timeline(group_dates: dict) -> dict:
         day = reminder_date.strftime("%b %d %Y")
         timeline[day] = events_group
 
-
       else:
         start_date = get_datetime(dates_rules["Start"])
         end_date = get_datetime(dates_rules["End"])
