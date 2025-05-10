@@ -132,7 +132,6 @@ def format_reminders(valid_reminders: list) -> list: # TO-DO | maybe map for thi
     if reminder_date in group_dates:
       group_dates[reminder_date].append(content_event)
 
-
     else:
       group_dates[reminder_date] = [content_event]
 
