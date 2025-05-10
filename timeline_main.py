@@ -128,7 +128,6 @@ def format_reminders(valid_reminders: list) -> list: # TO-DO | maybe map for thi
     content_event = f"{header_dir_name} - {style_key}[[{name_file}]]{style_key} {thumb_key}"
     reminder_date = schedule_old_dates(date_key, repeat_key)
 
-
     if reminder_date in group_dates:
       group_dates[reminder_date].append(content_event)
 
