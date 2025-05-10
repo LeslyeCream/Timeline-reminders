@@ -213,7 +213,6 @@ def build_timeline(group_dates: dict) -> dict:
       day = reminder_date.strftime("%b %d %Y")
       timeline[day] = events_group
 
-
     else:
 
   # ::::: Simple mode :::::
