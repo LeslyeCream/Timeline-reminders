@@ -195,7 +195,6 @@ def build_timeline(group_dates: dict) -> dict:
       expired_group.append("".join(events_group))
       timeline["Expired"] = expired_group
 
-
     elif reminder_date == TODAY:
       timeline["Today"] = events_group
 
