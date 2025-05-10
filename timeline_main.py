@@ -229,7 +229,6 @@ def build_timeline(group_dates: dict) -> dict:
           custom_dates = []
           custom_dates = [datetime.datetime.strptime(i, default_format_date).date() for i in dates_rules.get("Others")]
 
-
         if key_date >= start_date and key_date <= end_date or key_date in custom_dates:
           day = key_date.strftime("%b %d %Y")
           timeline[day] = events_group
